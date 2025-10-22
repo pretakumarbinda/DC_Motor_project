@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DC Motor Controller Using ESP32 & L298N chip</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: url("{{ url_for('static', filename='background.gif') }}") center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Dark overlay for better readability */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 0;
+    }
+
+    /* Animated Star Background */
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-container {
+      margin-bottom: 20px;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      background: white;
+      border-radius: 50%;
+      padding: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+      color: white;
+      font-size: 48px;
+      text-align: center;
+      animation: fadeInDown 1s ease-out 0.2s backwards;
+      font-family: 'Curlz MT', cursive;
+      font-weight: bold;
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    .controller {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px 50px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      text-align: center;
+      width: 100%;
+      max-width: 380px;
+      backdrop-filter: blur(10px);
+      animation: fadeInUp 1s ease-out 0.4s backwards;
+    }
+
+    .slider-container {
+      margin: 20px 0;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #ddd;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      transition: 0.3s;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    input[type="range"]::-moz-range-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    button {
+      width: 80px;
+      padding: 10px 0;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 10px;
+      background-color: #667eea;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    }
+
+    button.active-forward {
+      background-color: #28a745;
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+    }
+
+    button.active-reverse {
+      background-color: #dc3545;
+      box-shadow: 0 0 20px rgba(220, 53, 69, 0.6);
+    }
+
+    button.active-stop {
+      background-color: #6c757d;
+      box-shadow: 0 0 20px rgba(108, 117, 125, 0.6);
+    }
+
+    #speedValue {
+      font-weight: bold;
+      margin-left: 10px;
+      color: #667eea;
+    }
+
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+      min-height: 20px;
+    }
+
+    .status.success {
+      color: #28a745;
+    }
+
+    .status.error {
+      color: #dc3545;
+    }
+
+    .footer {
+      position: relative;
+      z-index: 1;
+      margin-top: 30px;
+      text-align: center;
+      color: white;
+      animation: fadeInUp 1s ease-out 0.6s backwards;
+    }
+
+    .footer-title {
+      font-size: 16px;
+      margin-bottom: 15px;
+      opacity: 0.9;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .names {
+      font-size: 16px;
+      font-weight: normal;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      line-height: 1.8;
+    }
+    
+    .names div {
+      margin-bottom: 5px;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 20px;
+      }
+      .controller {
+        padding: 25px 30px;
+      }
+      .logo {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Stars Background -->
+  <div class="stars" id="stars"></div>
+
+  <div class="content">
+    <!-- Logo -->
+    <div class="logo-container">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="RUET Logo">
+      </div>
+    </div>
+
+    <h1>ESP32 DC Motor Controller</h1>
+    
+    <div class="controller">
+      <div class="slider-container">
+        <label for="speed">Speed: <span id="speedValue">128</span></label><br>
+        <input type="range" id="speed" min="0" max="255" value="128">
+      </div>
+      <div>
+        <button id="btnForward" onclick="sendControl('F')">Forward</button>
+        <button id="btnReverse" onclick="sendControl('R')">Reverse</button>
+        <button id="btnStop" onclick="sendControl('S')">Stop</button>
+      </div>
+      <div class="status" id="status">Ready</div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-title">Designed by:</div>
+      <div class="names">
+        <div>Preta Kumar Binda - 2208036</div>
+      </div>
+    </div>
+    <!-- Footer with Names -->
+    <div class="footer">
+      <div class="footer-title">Group Members:</div>
+      <div class="names">
+        <div>Nazmul Hasan Niloy - 2208031</div>
+        <div>Tahsin Zaman Ratul - 2208032</div>
+        <div>Nadim Abrar Prodhan - 2208033</div>
+        <div>Ashiqur Rahman - 2208034</div>
+        <div>M. Abdullah - 2208035</div>
+        <div>Preta Kumar Binda - 2208036</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Create animated stars
+    function createStars() {
+      const starsContainer = document.getElementById('stars');
+      const numStars = 100;
+      
+      for (let i = 0; i < numStars; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        
+        const size = Math.random() * 3 + 1;
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 3 + 's';
+        star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        
+        starsContainer.appendChild(star);
+      }
+    }
+    
+    createStars();
+
+    // Motor control code
+    const speedSlider = document.getElementById('speed');
+    const speedValue = document.getElementById('speedValue');
+    const statusDiv = document.getElementById('status');
+
+    const btnForward = document.getElementById('btnForward');
+    const btnReverse = document.getElementById('btnReverse');
+    const btnStop = document.getElementById('btnStop');
+
+    let currentDirection = 'S';
+    let sliderTimeout = null;
+    let isRequestPending = false;
+
+    speedSlider.addEventListener('input', () => {
+      speedValue.textContent = speedSlider.value;
+      
+      if (currentDirection !== 'S') {
+        clearTimeout(sliderTimeout);
+        sliderTimeout = setTimeout(() => {
+          sendControl(currentDirection, true);
+        }, 100);
+      }
+    });
+
+    function sendControl(direction, isSliderUpdate = false) {
+      if (isRequestPending && !isSliderUpdate) {
+        return;
+      }
+
+      const speed = speedSlider.value;
+      currentDirection = direction;
+
+      btnForward.classList.remove('active-forward');
+      btnReverse.classList.remove('active-reverse');
+      btnStop.classList.remove('active-stop');
+
+      if(direction === 'F') {
+        btnForward.classList.add('active-forward');
+        statusDiv.textContent = `Moving Forward at ${speed}`;
+      }
+      else if(direction === 'R') {
+        btnReverse.classList.add('active-reverse');
+        statusDiv.textContent = `Moving Reverse at ${speed}`;
+      }
+      else if(direction === 'S') {
+        btnStop.classList.add('active-stop');
+        statusDiv.textContent = 'Stopped';
+      }
+
+      statusDiv.className = 'status';
+      isRequestPending = true;
+
+      fetch('/control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `direction=${direction}&speed=${speed}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Response:', data);
+        isRequestPending = false;
+        
+        if (data.status === 'success') {
+          statusDiv.className = 'status success';
+          if(direction === 'F') statusDiv.textContent = `✓ Forward @ ${speed}`;
+          else if(direction === 'R') statusDiv.textContent = `✓ Reverse @ ${speed}`;
+          else if(direction === 'S') statusDiv.textContent = '✓ Stopped';
+        } else {
+          statusDiv.className = 'status';
+          statusDiv.textContent = data.message;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        isRequestPending = false;
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ Connection Error!';
+      });
+    }
+  </script>
+</body>
+</html>
