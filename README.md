@@ -2,8 +2,6 @@
 
 A web-based DC motor controller using ESP32, L298N motor driver, and Flask web application with real-time speed control via WiFi.
 
-![Project Banner](static/logo.png)
-
 ## 🚀 Features
 
 - **Real-time Speed Control**: Adjust motor speed dynamically using a slider (0-255 PWM)
@@ -24,7 +22,6 @@ A web-based DC motor controller using ESP32, L298N motor driver, and Flask web a
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
 - [Contributors](#contributors)
-- [License](#license)
 
 ## 🔧 Hardware Requirements
 
@@ -221,22 +218,6 @@ const int pwmFreq = 1000;  // 1 kHz (change as needed)
 ### Slow response time
 - Use the async Flask code provided (with threading)
 - Optimize ESP32 code to send response before processing
-
-## 👥 Contributors
-
-**Group Members:**
-- Nazmul Hasan Niloy - 2208031
-- Tahsin Zaman Ratul - 2208032
-- Nadim Abrar Prodhan - 2208033
-- Ashiqur Rahman - 2208034
-- M. Abdullah - 2208035
-- Preta Kumar Binda - 2208036
-
-**Institution:** Rajshahi University of Engineering & Technology (RUET)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
